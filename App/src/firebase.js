@@ -6,7 +6,9 @@ import { getFirestore } from "firebase/firestore";
 // from the Firebase Console (https://console.firebase.google.com/).
 const firebaseConfig = {
   apiKey: "AIzaSyCchYZnjuUjTTPvYV3lfDXESTVjGtZgDQ8",
-  authDomain: "gate-app-ishant-2027.firebaseapp.com",
+  authDomain: (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1")
+    ? window.location.hostname
+    : "gate-app-ishant-2027.firebaseapp.com",
   projectId: "gate-app-ishant-2027",
   storageBucket: "gate-app-ishant-2027.firebasestorage.app",
   messagingSenderId: "1035293490524",
