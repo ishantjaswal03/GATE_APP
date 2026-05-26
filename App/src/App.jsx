@@ -389,6 +389,23 @@ function App() {
   const [routineEditOpen, setRoutineEditOpen] = useState(false);
   const [tempRoutine, setTempRoutine] = useState([]);
   
+  // Custom Toast Notification State & Auto-Dismiss
+  const [toast, setToast] = useState(null);
+  
+  const showToast = (message, type = 'info') => {
+    setToast({ message, type });
+  };
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => {
+        setToast(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+  
+  
   // Audio Context Ref for synthesizers
   const audioCtxRef = useRef(null);
   const binauralNodesRef = useRef(null);
@@ -426,7 +443,7 @@ function App() {
       })
       .catch((error) => {
         console.error("Redirect auth error:", error);
-        alert("Google Authentication failed: " + error.message);
+        showToast("Google Authentication failed: " + error.message, "error");
       });
   }, []);
 
@@ -1178,7 +1195,7 @@ function App() {
   // ==========================================
   const startFocusSession = () => {
     if (!focusGoal.trim()) {
-      alert("Please enter a goal to lock your focus.");
+      showToast("Please enter a goal to lock your focus.", "warning");
       return;
     }
     setFocusGoalLocked(true);
@@ -1229,7 +1246,7 @@ function App() {
 
     setMistakes(prev => [...prev, newMistake]);
     setFocusQuickMistake("");
-    alert("Mistake saved to your Mistake Book. Good job identifying it!");
+    showToast("Mistake saved to your Mistake Book. Good job identifying it!", "success");
   };
 
   const exitFocusMode = () => {
@@ -1293,7 +1310,7 @@ function App() {
                     placeholder="e.g. Ishant J."
                   />
                 </div>
-                <div className="form-row" style={{ display: 'flex', gap: '16px', marginBottom: '12px' }}>
+                <div className="form-row form-row-picker">
                   <TimePicker12h 
                     label="Night Shift Start Time" 
                     value={shiftStart} 
@@ -1347,8 +1364,8 @@ function App() {
             </button>
           </div>
           <div className="user-profile">
-            <div className="avatar" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--color-primary)' }}>
-              <img src={user?.photoURL || "/avatar_scholar.png"} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <div className="avatar" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--color-surface-container-highest)' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '20px', color: 'var(--color-primary)' }}>person</span>
             </div>
             <div className="user-meta">
               <span className="user-name">{username}</span>
@@ -1432,7 +1449,7 @@ function App() {
               </div>
               <div className="dashboard-quick-actions">
                 <button className="secondary-button" onClick={() => setMistakeModalOpen(true)}>
-                  <span className="material-symbols-outlined">add_alert</span>
+                  <span className="material-symbols-outlined">edit_document</span>
                   <span>Log a Mistake</span>
                 </button>
                 <button className="primary-button" onClick={() => openNewTaskModal()}>
@@ -1446,12 +1463,15 @@ function App() {
               
               {/* Daily Sleep/Study Timeline Card */}
               <div className="grid-card col-span-2 row-span-1 chronobio-card">
-                <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h3 className="card-title">My Sleep & Study Hours</h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="card-header chronobio-header">
+                  <div className="chronobio-title-area">
+                    <span className="chronobio-label-mobile">MY SLEEP & STUDY HOURS</span>
+                    <h3 className="card-title">My Sleep & Study Hours</h3>
+                    <h3 className="chronobio-sub-mobile">Best Study Hours Plan</h3>
+                  </div>
+                  <div className="chronobio-actions">
                     <button 
-                      className="secondary-button" 
-                      style={{ padding: '4px 10px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--color-surface-container-lowest)', borderColor: 'var(--color-outline-variant)' }}
+                      className="secondary-button edit-routine-btn" 
                       onClick={() => {
                         setTempRoutine(JSON.parse(JSON.stringify(routine)));
                         setRoutineEditOpen(true);
@@ -1498,14 +1518,18 @@ function App() {
                     );
                   })}
                 </div>
+                <div className="chrono-timeline-labels">
+                  <span>0:00</span>
+                  <span>8:00</span>
+                  <span>10:00</span>
+                  <span>24:00</span>
+                </div>
               </div>
 
               {/* Weekly Study Hours logged Card */}
               <div className="grid-card col-span-1 row-span-1 efficiency-card">
-                <div className="card-header">
-                  <h3 className="card-title">Weekly Focus Hours</h3>
-                  <span className="efficiency-pct">{efficiencyRate}%</span>
-                </div>
+                <h3 className="card-title">Weekly Focus Hours</h3>
+                <span className="efficiency-pct">{efficiencyRate}%</span>
                 <div className="efficiency-chart-container">
                   <div className="bar-chart">
                     {weekDays.map((day, idx) => {
@@ -1577,12 +1601,32 @@ function App() {
                 <div className="syllabus-radial-stats">
                   <div className="radial-progress-wrapper">
                     <svg className="radial-svg" viewBox="0 0 100 100">
+                      <defs>
+                        <linearGradient id="radial3dGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#0089a8" />
+                          <stop offset="30%" stopColor="#4cd7f6" />
+                          <stop offset="50%" stopColor="#ffffff" />
+                          <stop offset="70%" stopColor="#4cd7f6" />
+                          <stop offset="100%" stopColor="#005a70" />
+                        </linearGradient>
+                        <filter id="radialDropShadow" x="-15%" y="-15%" width="130%" height="130%">
+                          <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#000000" floodOpacity="0.8" />
+                        </filter>
+                      </defs>
+                      {/* Outer bevel reflection ring */}
+                      <circle className="radial-bevel-outer" cx="50" cy="50" r="44" fill="none" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="1"></circle>
+                      {/* Main track groove */}
                       <circle className="radial-bg" cx="50" cy="50" r="40"></circle>
+                      {/* Inner bevel shadow ring */}
+                      <circle className="radial-bevel-inner" cx="50" cy="50" r="36" fill="none" stroke="rgba(0, 0, 0, 0.8)" strokeWidth="1"></circle>
+                      {/* 3D cylindrical glowing progress circle */}
                       <circle 
                         className="radial-fg" 
                         cx="50" 
                         cy="50" 
                         r="40" 
+                        stroke="url(#radial3dGlow)"
+                        filter="url(#radialDropShadow)"
                         strokeDasharray="251.2" 
                         style={{ strokeDashoffset: radialOffset }}
                       ></circle>
@@ -2010,6 +2054,57 @@ function App() {
                 </tbody>
               </table>
             </div>
+
+            {/* Mobile Mistake Cards (Visible only on mobile) */}
+            <div className="mistake-cards-mobile-view">
+              {mistakes
+                .filter(m => {
+                  const matchesSearch = m.topic.toLowerCase().includes(mistakeSearch.toLowerCase()) || 
+                                       m.description.toLowerCase().includes(mistakeSearch.toLowerCase()) || 
+                                       m.corrective.toLowerCase().includes(mistakeSearch.toLowerCase());
+                  const matchesSub = mistakeFilterSubject === 'all' || m.subject === mistakeFilterSubject;
+                  const matchesType = mistakeFilterType === 'all' || m.type === mistakeFilterType;
+                  const matchesStatus = mistakeFilterStatus === 'all' || 
+                                       (mistakeFilterStatus === 'solved' && m.solved) || 
+                                       (mistakeFilterStatus === 'unsolved' && !m.solved);
+                  return matchesSearch && matchesSub && matchesType && matchesStatus;
+                })
+                .map(m => (
+                  <div className="mobile-mistake-card glass-panel" key={m.id}>
+                    <div className="mobile-mistake-card-header">
+                      <div className="mobile-mistake-title-grp">
+                        <span className="mobile-mistake-subject">{m.subject}</span>
+                        <h4 className="mobile-mistake-topic">{m.topic}</h4>
+                        <span className="mobile-mistake-date" style={{ fontSize: '9px', opacity: 0.5, marginTop: '2px' }}>
+                          {formatDateString(m.date)}
+                        </span>
+                      </div>
+                      <span className={`type-badge ${m.type.toLowerCase()}`}>{m.type}</span>
+                    </div>
+                    <div className="mobile-mistake-body">
+                      <div className="mobile-mistake-section">
+                        <span className="label">What went wrong?</span>
+                        <p>{m.description}</p>
+                      </div>
+                      <div className="mobile-mistake-section corrective">
+                        <span className="label">How to avoid next time</span>
+                        <p>{m.corrective}</p>
+                      </div>
+                    </div>
+                    <div className="mobile-mistake-actions">
+                      <button 
+                        className={`status-toggle-btn ${m.solved ? 'solved' : ''}`}
+                        onClick={() => toggleMistakeSolved(m.id)}
+                      >
+                        {m.solved ? 'Solved' : 'Unsolved'}
+                      </button>
+                      <button className="icon-button delete-mistake-btn" style={{ padding: '6px' }} onClick={() => deleteMistake(m.id)} title="Delete Mistake">
+                        <span className="material-symbols-outlined" style={{ color: 'var(--color-error)' }}>delete</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
           </section>
 
           {/* TAB 5: REVISION SCHEDULE */}
@@ -2195,7 +2290,7 @@ function App() {
                 />
               </div>
 
-              <div className="form-row" style={{ display: 'flex', gap: '16px', marginBottom: '12px' }}>
+              <div className="form-row form-row-picker">
                 <TimePicker12h 
                   label="Start Time" 
                   value={taskStart} 
@@ -2305,13 +2400,33 @@ function App() {
               {/* Big Clock Ring */}
               <div className="focus-timer-ring">
                 <svg className="timer-svg" viewBox="0 0 100 100">
+                  <defs>
+                    <linearGradient id="timer3dGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#00a4cc" />
+                      <stop offset="30%" stopColor="#4cd7f6" />
+                      <stop offset="50%" stopColor="#ffffff" />
+                      <stop offset="70%" stopColor="#4cd7f6" />
+                      <stop offset="100%" stopColor="#007390" />
+                    </linearGradient>
+                    <filter id="timerDropShadow" x="-15%" y="-15%" width="130%" height="130%">
+                      <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#000000" floodOpacity="0.95" />
+                    </filter>
+                  </defs>
+                  {/* Outer Bevel reflection ring */}
+                  <circle className="timer-bevel-outer" cx="50" cy="50" r="48" fill="none" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="0.8"></circle>
+                  {/* Hollow track groove */}
                   <circle className="timer-bg" cx="50" cy="50" r="45"></circle>
+                  {/* Inner Bevel shadow ring */}
+                  <circle className="timer-bevel-inner" cx="50" cy="50" r="42" fill="none" stroke="rgba(0, 0, 0, 0.8)" strokeWidth="0.8"></circle>
+                  {/* 3D cylindrical glowing progress circle */}
                   <circle 
                     className="timer-fg" 
                     id="focus-timer-fg" 
                     cx="50" 
                     cy="50" 
                     r="45" 
+                    stroke="url(#timer3dGlow)"
+                    filter="url(#timerDropShadow)"
                     strokeDasharray="282.7" 
                     style={{ strokeDashoffset: 282.7 - (282.7 * focusRemaining) / focusDuration }}
                   ></circle>
@@ -2505,7 +2620,7 @@ function App() {
               });
               
               if (isDuplicate) {
-                alert("This topic already exists in this subject.");
+                showToast("This topic already exists in this subject.", "warning");
                 return;
               }
               
@@ -2714,6 +2829,21 @@ function App() {
               </div>
 
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* CUSTOM TOAST NOTIFICATION CONTAINER */}
+      {toast && (
+        <div className="toast-container">
+          <div className={`toast-notification ${toast.type}`}>
+            <span className="material-symbols-outlined toast-icon">
+              {toast.type === 'success' ? 'check_circle' : toast.type === 'warning' ? 'warning' : toast.type === 'error' ? 'error' : 'info'}
+            </span>
+            <span className="toast-message">{toast.message}</span>
+            <button className="toast-close" onClick={() => setToast(null)}>
+              <span className="material-symbols-outlined">close</span>
+            </button>
           </div>
         </div>
       )}
